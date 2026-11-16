@@ -1,0 +1,334 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Avazas Books — Secure Digital E-Book Marketplace API",
+    "version": "1.0.0",
+    "description": "Production REST API for Avazas Books: e-book discovery, Cashfree payments, Readium LCP DRM licensing, and Android Kotlin reader offline synchronization.",
+    "contact": {
+      "name": "Avazas Books Engineering",
+      "email": "support@avazas.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/api/v1",
+      "description": "Local Development Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "ApiResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "message": { "type": "string" },
+          "data": { "type": "object" },
+          "meta": { "type": "object" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "email": { "type": "string" },
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "phone": { "type": "string", "nullable": true },
+          "role": { "type": "string", "enum": ["SUPER_ADMIN", "ADMIN", "CUSTOMER"] },
+          "status": { "type": "string", "enum": ["ACTIVE", "SUSPENDED", "PENDING_VERIFICATION"] }
+        }
+      },
+      "Book": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "slug": { "type": "string" },
+          "subtitle": { "type": "string", "nullable": true },
+          "description": { "type": "string" },
+          "basePrice": { "type": "number" },
+          "salePrice": { "type": "number" },
+          "currency": { "type": "string", "example": "INR" },
+          "availableFormats": { "type": "string", "enum": ["EPUB", "PDF", "BOTH"] },
+          "status": { "type": "string", "enum": ["DRAFT", "PUBLISHED", "ARCHIVED"] }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "orderNumber": { "type": "string" },
+          "totalAmount": { "type": "number" },
+          "netAmount": { "type": "number" },
+          "status": { "type": "string", "enum": ["PENDING", "PAID", "FAILED", "CANCELLED", "REFUNDED"] }
+        }
+      },
+      "ReadiumLcpLicense": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "provider": { "type": "string", "example": "https://api.avazas.com/lcp" },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "email": { "type": "string" },
+              "encrypted": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "rights": {
+            "type": "object",
+            "properties": {
+              "print": { "type": "integer" },
+              "copy": { "type": "integer" }
+            }
+          },
+          "signature": { "type": "object" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Register a new Customer account",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password", "firstName", "lastName"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "minLength": 8 },
+                  "firstName": { "type": "string" },
+                  "lastName": { "type": "string" },
+                  "phone": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Customer registered successfully" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Authenticate user (Customer or Admin) and issue JWT tokens",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login successful, tokens returned" }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Get authenticated user profile and permissions",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "User profile" }
+        }
+      }
+    },
+    "/books": {
+      "get": {
+        "tags": ["Books Catalog"],
+        "summary": "List public books with search, category and pagination filters",
+        "parameters": [
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "category", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 12 } }
+        ],
+        "responses": {
+          "200": { "description": "Books list" }
+        }
+      },
+      "post": {
+        "tags": ["Books Catalog"],
+        "summary": "Create new book publication metadata (Admin/Super Admin)",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Book created" }
+        }
+      }
+    },
+    "/books/{idOrSlug}": {
+      "get": {
+        "tags": ["Books Catalog"],
+        "summary": "Get book details by ID or Slug",
+        "parameters": [
+          { "name": "idOrSlug", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Book details" }
+        }
+      }
+    },
+    "/orders": {
+      "post": {
+        "tags": ["Orders & Cashfree"],
+        "summary": "Create order and initialize Cashfree payment session",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["bookIds"],
+                "properties": {
+                  "bookIds": { "type": "array", "items": { "type": "string", "format": "uuid" } },
+                  "returnUrl": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Order created with paymentSessionId" }
+        }
+      }
+    },
+    "/payments/{orderId}/status": {
+      "get": {
+        "tags": ["Orders & Cashfree"],
+        "summary": "Verify Cashfree payment status and settle entitlement",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "orderId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Payment status" }
+        }
+      }
+    },
+    "/library": {
+      "get": {
+        "tags": ["Customer Library"],
+        "summary": "Get customer purchased books and reading progress",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Customer library list" }
+        }
+      }
+    },
+    "/devices": {
+      "get": {
+        "tags": ["Android Device Management"],
+        "summary": "List customer registered Android devices (max 3)",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "List of devices" }
+        }
+      }
+    },
+    "/devices/register": {
+      "post": {
+        "tags": ["Android Device Management"],
+        "summary": "Register Android device hardware binding",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["deviceId", "deviceName"],
+                "properties": {
+                  "deviceId": { "type": "string" },
+                  "deviceName": { "type": "string" },
+                  "deviceType": { "type": "string", "default": "ANDROID" },
+                  "operatingSystem": { "type": "string" },
+                  "appVersion": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Device registered" }
+        }
+      }
+    },
+    "/drm/licenses": {
+      "post": {
+        "tags": ["DRM Licensing"],
+        "summary": "Generate or retrieve Readium LCP cryptographic license",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Readium LCP License JSON" }
+        }
+      }
+    },
+    "/downloads/authorize": {
+      "post": {
+        "tags": ["Downloads & Stream"],
+        "summary": "Authorize encrypted publication download token (15m validity)",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Download token returned" }
+        }
+      }
+    },
+    "/downloads/stream": {
+      "get": {
+        "tags": ["Downloads & Stream"],
+        "summary": "Stream AES-256 encrypted EPUB or PDF publication package",
+        "parameters": [
+          { "name": "token", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Encrypted binary stream" }
+        }
+      }
+    },
+    "/reading/progress": {
+      "put": {
+        "tags": ["Reading Progress & Sync"],
+        "summary": "Sync reading position and bookmark from Android reader",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Reading progress updated" }
+        }
+      }
+    },
+    "/admin/analytics": {
+      "get": {
+        "tags": ["Admin Operations"],
+        "summary": "Get platform sales, orders, and user analytics",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Analytics overview" }
+        }
+      }
+    }
+  }
+}
