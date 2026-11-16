@@ -9,7 +9,35 @@ const logging = process.env.DB_LOGGING === 'true' ? console.log : false;
 
 let sequelize: Sequelize;
 
-if (dialect === 'sqlite') {
+const databaseUrl = process.env.DATABASE_URL;
+
+if (databaseUrl) {
+  // Direct PostgreSQL connection string (Standard on Railway, Render, Heroku)
+  sequelize = new Sequelize(databaseUrl, {
+    dialect: 'postgres',
+    logging,
+    dialectOptions:
+      process.env.DB_SSL === 'false'
+        ? {}
+        : {
+            ssl: {
+              require: true,
+              rejectUnauthorized: false,
+            },
+          },
+    pool: {
+      max: 20,
+      min: 2,
+      acquire: 30000,
+      idle: 10000,
+    },
+    define: {
+      timestamps: true,
+      underscored: true,
+      paranoid: false,
+    },
+  });
+} else if (dialect === 'sqlite') {
   const storage = process.env.SQLITE_STORAGE || path.resolve(process.cwd(), 'database.sqlite');
   sequelize = new Sequelize({
     dialect: 'sqlite',

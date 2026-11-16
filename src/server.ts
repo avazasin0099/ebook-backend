@@ -15,10 +15,10 @@ async function bootstrap() {
 
     const server = http.createServer(app);
 
-    server.listen(PORT, () => {
+    server.listen(PORT, '0.0.0.0', () => {
       logger.info(`🚀 Avazas Books API server listening on port ${PORT}`);
       logger.info(`📖 Environment: ${process.env.NODE_ENV || 'development'}`);
-      logger.info(`🔗 Base URL: http://localhost:${PORT}/api/v1`);
+      logger.info(`🔗 Base URL: http://0.0.0.0:${PORT}/api/v1`);
     });
 
     // Graceful Shutdown
