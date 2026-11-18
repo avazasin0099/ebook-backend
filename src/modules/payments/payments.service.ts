@@ -127,14 +127,20 @@ export class PaymentsService {
 
     const transaction = await sequelize.transaction();
     try {
+      // Lock only the Order row directly (avoiding outer join locking issues on PostgreSQL)
       const order = await Order.findByPk(params.orderId, {
-        include: [{ model: OrderItem, as: 'items' }],
         transaction,
         lock: true,
       });
 
       if (!order) {
         throw new NotFoundError(`Order ${params.orderId} not found`);
+      }
+
+      if (order.status === 'PAID') {
+        logger.info(`Order ${order.id} is already fulfilled as PAID.`);
+        await transaction.commit();
+        return;
       }
 
       // 2. Mark order as PAID
@@ -158,7 +164,11 @@ export class PaymentsService {
       );
 
       // 4. Create Book Purchase Entitlements for each book in order
-      const orderItems = (order as any).items as OrderItem[];
+      const orderItems = await OrderItem.findAll({
+        where: { orderId: order.id },
+        transaction,
+      });
+
       for (const item of orderItems) {
         await BookPurchase.findOrCreate({
           where: {
