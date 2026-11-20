@@ -20,7 +20,7 @@ export interface BookQueryParams {
   minPrice?: number;
   maxPrice?: number;
   sort?: 'newest' | 'price_asc' | 'price_desc' | 'popular';
-  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' | 'ALL' | string;
 }
 
 export class BooksService {
@@ -29,9 +29,13 @@ export class BooksService {
     const limit = Math.min(100, Math.max(1, Number(params.limit) || 20));
     const offset = (page - 1) * limit;
 
-    const where: any = {
-      status: params.status || 'PUBLISHED',
-    };
+    const where: any = {};
+
+    if (params.status && params.status !== 'ALL') {
+      where.status = params.status;
+    } else if (!params.status) {
+      where.status = 'PUBLISHED';
+    }
 
     if (params.search) {
       where[Op.or] = [
@@ -159,6 +163,7 @@ export class BooksService {
     salePrice: number;
     currency?: string;
     availableFormats?: string;
+    status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
     isFeatured?: boolean;
     categoryIds?: string[];
     authorIds?: string[];
@@ -174,7 +179,7 @@ export class BooksService {
       const book = await Book.create(
         {
           ...data,
-          status: 'DRAFT',
+          status: data.status || 'DRAFT',
         },
         { transaction }
       );

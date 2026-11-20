@@ -14,6 +14,7 @@ export const createBookSchema = z.object({
     salePrice: z.number().nonnegative('Sale price must be >= 0'),
     currency: z.string().max(10).default('INR'),
     availableFormats: z.string().default('EPUB,PDF'),
+    status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).default('DRAFT'),
     isFeatured: z.boolean().default(false),
     categoryIds: z.array(z.string().uuid()).optional(),
     authorIds: z.array(z.string().uuid()).optional(),
