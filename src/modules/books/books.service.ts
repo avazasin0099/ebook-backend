@@ -10,12 +10,15 @@ import {
 } from '../../database/models';
 import { storageService } from '../../services/storage.service';
 import { ConflictError, NotFoundError } from '../../utils/errors';
+import { normalizeTag } from '../../utils/normalize';
 
 export interface BookQueryParams {
   page?: number;
   limit?: number;
   search?: string;
   category?: string;
+  subject?: string;
+  className?: string;
   language?: string;
   minPrice?: number;
   maxPrice?: number;
@@ -46,6 +49,16 @@ export class BooksService {
 
     if (params.language) {
       where.language = params.language;
+    }
+
+    const subject = normalizeTag(params.subject);
+    if (subject) {
+      where.subject = subject;
+    }
+
+    const className = normalizeTag(params.className);
+    if (className) {
+      where.className = className;
     }
 
     if (params.minPrice !== undefined || params.maxPrice !== undefined) {
@@ -165,6 +178,8 @@ export class BooksService {
     availableFormats?: string;
     status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
     isFeatured?: boolean;
+    className?: string;
+    subject?: string;
     categoryIds?: string[];
     authorIds?: string[];
     publisherIds?: string[];
@@ -179,6 +194,8 @@ export class BooksService {
       const book = await Book.create(
         {
           ...data,
+          className: normalizeTag(data.className),
+          subject: normalizeTag(data.subject),
           status: data.status || 'DRAFT',
         },
         { transaction }
@@ -220,11 +237,16 @@ export class BooksService {
       currency?: string;
       availableFormats?: string;
       isFeatured?: boolean;
+      className?: string | null;
+      subject?: string | null;
       categoryIds?: string[];
       authorIds?: string[];
       publisherIds?: string[];
     }>
   ) {
+    if (data.className !== undefined) data.className = normalizeTag(data.className);
+    if (data.subject !== undefined) data.subject = normalizeTag(data.subject);
+
     const book = await Book.findByPk(id);
     if (!book) {
       throw new NotFoundError('Book not found');

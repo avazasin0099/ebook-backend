@@ -51,6 +51,7 @@ describe('Authentication & RBAC Integration Tests', () => {
         password: 'ReaderPass2026!',
         firstName: 'John',
         lastName: 'Doe',
+        className: 'Class 8',
         phone: '+919999988888',
       });
 
@@ -69,6 +70,7 @@ describe('Authentication & RBAC Integration Tests', () => {
         password: 'ReaderPass2026!',
         firstName: 'Imposter',
         lastName: 'Admin',
+        className: 'Class 8',
       });
 
     expect(res.status).toBe(409);

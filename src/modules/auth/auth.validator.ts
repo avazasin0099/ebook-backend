@@ -9,6 +9,7 @@ export const registerSchema = z.object({
     firstName: z.string().min(1, 'First name is required').max(100),
     lastName: z.string().min(1, 'Last name is required').max(100),
     phone: z.string().max(20).optional(),
+    className: z.string().trim().min(1, 'Class is required').max(50),
   }),
 });
 

@@ -31,6 +31,7 @@ describe('DRM, Devices, Encrypted Downloads & Reading Telemetry Integration Test
         password: 'DrmPassword2026!',
         firstName: 'Devika',
         lastName: 'Rathore',
+        className: 'Class 8',
       });
 
     customerToken = regRes.body.data.accessToken;

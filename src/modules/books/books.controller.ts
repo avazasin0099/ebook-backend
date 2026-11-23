@@ -9,7 +9,21 @@ import { storageService } from '../../services/storage.service';
 export class BooksController {
   public async listPublic(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await booksService.listPublic(req.query as any);
+      const query = req.query as Record<string, any>;
+      const params: Record<string, any> = {
+        ...query,
+        // subject can come from the route (/books/subject/:subject) or the query (?subject=)
+        subject: req.params.subject ?? query.subject,
+        className: query.class ?? query.className,
+      };
+
+      // Logged-in students only see books for their own class by default
+      const isAdmin = req.user?.roleName === 'SUPER_ADMIN' || req.user?.roleName === 'ADMIN';
+      if (req.user && !isAdmin && req.user.className) {
+        params.className = req.user.className;
+      }
+
+      const result = await booksService.listPublic(params);
       sendSuccess({
         res,
         data: result.books,

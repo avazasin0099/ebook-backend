@@ -134,6 +134,130 @@ describe('Book & Catalog Management Integration Tests', () => {
     expect(res.body.data[0].id).toBe(createdBookId);
   });
 
+  describe('class & subject filters', () => {
+    const stamp = Date.now();
+    const class8 = `Class 8 ${stamp}`;
+    const class9 = `Class 9 ${stamp}`;
+    let physicsBookId: string;
+    let mathBookId: string;
+    let studentToken: string;
+
+    const createPublished = async (title: string, className: string, subject: string) => {
+      const created = await request(app)
+        .post('/api/v1/books')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          title,
+          slug: `${title.toLowerCase().replace(/\s+/g, '-')}-${stamp}`,
+          description: 'Filter test book',
+          basePrice: 100,
+          salePrice: 50,
+          className,
+          subject,
+        });
+      expect(created.status).toBe(201);
+      await request(app)
+        .patch(`/api/v1/books/${created.body.data.id}/status`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ status: 'PUBLISHED' });
+      return created.body.data;
+    };
+
+    beforeAll(async () => {
+      const physics = await createPublished('Physics Basics', class8, 'Physics');
+      const math = await createPublished('Math Basics', class9, 'Math');
+      physicsBookId = physics.id;
+      mathBookId = math.id;
+      expect(physics.className).toBe(class8.toLowerCase());
+      expect(physics.subject).toBe('physics');
+
+      const reg = await request(app)
+        .post('/api/v1/auth/register')
+        .send({
+          email: `student_${stamp}@example.com`,
+          password: 'StudentPass2026!',
+          firstName: 'Rahim',
+          lastName: 'Uddin',
+          className: `  ${class8.toUpperCase()} `,
+        });
+      expect(reg.status).toBe(201);
+      expect(reg.body.data.user.className).toBe(class8.toLowerCase());
+      studentToken = reg.body.data.accessToken;
+    });
+
+    it('rejects registration without className', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/register')
+        .send({
+          email: `noclass_${stamp}@example.com`,
+          password: 'StudentPass2026!',
+          firstName: 'No',
+          lastName: 'Class',
+        });
+      expect(res.status).toBe(400);
+    });
+
+    it('logged-in student sees only books of their class by default', async () => {
+      const res = await request(app)
+        .get('/api/v1/books')
+        .set('Authorization', `Bearer ${studentToken}`)
+        .query({ limit: 100 });
+      const ids = res.body.data.map((b: any) => b.id);
+      expect(ids).toContain(physicsBookId);
+      expect(ids).not.toContain(mathBookId);
+      expect(res.body.data.every((b: any) => b.className === class8.toLowerCase())).toBe(true);
+    });
+
+    it('student cannot override their class with ?class=', async () => {
+      const res = await request(app)
+        .get('/api/v1/books')
+        .set('Authorization', `Bearer ${studentToken}`)
+        .query({ class: class9 });
+      const ids = res.body.data.map((b: any) => b.id);
+      expect(ids).not.toContain(mathBookId);
+    });
+
+    it('guest sees books of all classes and can filter with ?class=', async () => {
+      const all = await request(app).get('/api/v1/books').query({ search: 'Basics', limit: 100 });
+      const ids = all.body.data.map((b: any) => b.id);
+      expect(ids).toEqual(expect.arrayContaining([physicsBookId, mathBookId]));
+
+      const filtered = await request(app).get('/api/v1/books').query({ class: class9 });
+      expect(filtered.body.data.map((b: any) => b.id)).toEqual([mathBookId]);
+    });
+
+    it('filters by subject via query param (case-insensitive)', async () => {
+      const res = await request(app)
+        .get('/api/v1/books')
+        .query({ subject: 'PHYSICS', search: 'Basics' });
+      const ids = res.body.data.map((b: any) => b.id);
+      expect(ids).toContain(physicsBookId);
+      expect(ids).not.toContain(mathBookId);
+    });
+
+    it('filters by subject via route param', async () => {
+      const res = await request(app)
+        .get('/api/v1/books/subject/math')
+        .set('Authorization', `Bearer ${studentToken}`);
+      expect(res.status).toBe(200);
+      // student is class 8, the math book is class 9, so nothing matches
+      expect(res.body.data.map((b: any) => b.id)).not.toContain(mathBookId);
+
+      const guest = await request(app).get('/api/v1/books/subject/math').query({ search: 'Basics' });
+      const guestIds = guest.body.data.map((b: any) => b.id);
+      expect(guestIds).toContain(mathBookId);
+      expect(guestIds).not.toContain(physicsBookId);
+    });
+
+    it('combines subject with the existing category filter', async () => {
+      const res = await request(app)
+        .get('/api/v1/books')
+        .query({ subject: 'physics', category: `no-such-category-${stamp}` });
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBe(0);
+    });
+  });
+
   it('8. should upload cover image and manuscript to private storage', async () => {
     // 1. Upload dummy cover
     const coverBuffer = Buffer.from('fake-jpeg-image-bytes-header');

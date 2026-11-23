@@ -3,6 +3,7 @@ export interface AuthenticatedUser {
   email: string;
   firstName: string;
   lastName: string;
+  className?: string | null;
   roleId: string;
   roleName: 'SUPER_ADMIN' | 'ADMIN' | 'CUSTOMER';
   permissions: string[];

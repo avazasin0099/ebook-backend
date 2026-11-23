@@ -10,6 +10,7 @@ export class User extends Model {
   declare passwordHash: string;
   declare firstName: string;
   declare lastName: string;
+  declare className?: string | null;
   declare status: 'ACTIVE' | 'SUSPENDED' | 'PENDING_VERIFICATION';
   declare emailVerified: boolean;
   declare phoneVerified: boolean;
@@ -62,6 +63,11 @@ User.init(
       type: DataTypes.STRING(100),
       allowNull: false,
       field: 'last_name',
+    },
+    className: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      field: 'class_name',
     },
     status: {
       type: DataTypes.STRING(30),

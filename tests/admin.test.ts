@@ -31,6 +31,7 @@ describe('Admin Dashboard, Analytics & Reporting Integration Tests', () => {
         password: 'CustPass2026!',
         firstName: 'Sneha',
         lastName: 'Mukherjee',
+        className: 'Class 8',
       });
     customerToken = custReg.body.data.accessToken;
   });

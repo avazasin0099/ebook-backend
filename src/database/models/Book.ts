@@ -18,6 +18,8 @@ export class Book extends Model {
   declare coverImageUrl?: string | null;
   declare availableFormats: string;
   declare isFeatured: boolean;
+  declare className?: string | null;
+  declare subject?: string | null;
   declare readonly createdAt: Date;
   declare readonly updatedAt: Date;
   declare readonly deletedAt?: Date | null;
@@ -106,6 +108,15 @@ Book.init(
       defaultValue: false,
       field: 'is_featured',
     },
+    className: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      field: 'class_name',
+    },
+    subject: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
   },
   {
     sequelize,
@@ -115,6 +126,8 @@ Book.init(
       { fields: ['status'] },
       { fields: ['language'] },
       { fields: ['is_featured'] },
+      { fields: ['class_name'] },
+      { fields: ['subject'] },
     ],
   }
 );

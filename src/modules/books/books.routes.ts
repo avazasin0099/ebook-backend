@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { booksController } from './books.controller';
-import { authenticateJwt } from '../../middlewares/auth.middleware';
+import { authenticateJwt, optionalAuthenticateJwt } from '../../middlewares/auth.middleware';
 import { requireRole } from '../../middlewares/rbac.middleware';
 import { validate } from '../../middlewares/validate.middleware';
 import { createBookSchema, updateBookSchema, updateStatusSchema } from './books.validator';
@@ -9,7 +9,8 @@ import { uploadCover, uploadManuscript } from '../../middlewares/upload.middlewa
 const router = Router();
 
 // Public routes
-router.get('/', booksController.listPublic);
+router.get('/', optionalAuthenticateJwt, booksController.listPublic);
+router.get('/subject/:subject', optionalAuthenticateJwt, booksController.listPublic);
 router.get('/assets/*', booksController.serveCoverAsset);
 router.get('/:id', booksController.getByIdOrSlug);
 

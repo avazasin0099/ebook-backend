@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
+import { normalizeTag } from '../../utils/normalize';
 import {
   User,
   Role,
@@ -52,6 +53,7 @@ export class AuthService {
     firstName: string;
     lastName: string;
     phone?: string;
+    className: string;
     ipAddress?: string;
     deviceInfo?: string;
   }) {
@@ -74,6 +76,7 @@ export class AuthService {
       firstName: data.firstName,
       lastName: data.lastName,
       phone: data.phone || null,
+      className: normalizeTag(data.className),
       status: 'ACTIVE',
       emailVerified: true, // Configurable for instant access
       phoneVerified: false,
@@ -101,6 +104,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         phone: user.phone,
+        className: user.className,
         role: 'CUSTOMER',
       },
       accessToken,
@@ -213,6 +217,7 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        className: user.className,
         role: roleName,
         permissions,
       },
@@ -294,7 +299,7 @@ export class AuthService {
 
   public async getProfile(userId: string) {
     const user = await User.findByPk(userId, {
-      attributes: ['id', 'email', 'firstName', 'lastName', 'phone', 'status', 'emailVerified', 'createdAt'],
+      attributes: ['id', 'email', 'firstName', 'lastName', 'phone', 'className', 'status', 'emailVerified', 'createdAt'],
       include: [
         {
           model: Role,
@@ -325,6 +330,7 @@ export class AuthService {
       firstName: user.firstName,
       lastName: user.lastName,
       phone: user.phone,
+      className: user.className,
       status: user.status,
       emailVerified: user.emailVerified,
       role: role || { id: user.roleId, name: 'CUSTOMER' },
