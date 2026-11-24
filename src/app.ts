@@ -14,6 +14,9 @@ import { sendSuccess } from './utils/apiResponse';
 
 const app: Application = express();
 
+// Trust reverse proxy (Railway, Render, Nginx, Cloudflare) so Express and express-rate-limit read X-Forwarded-For correctly
+app.set('trust proxy', 1);
+
 // Security Middlewares
 app.use(helmet());
 
