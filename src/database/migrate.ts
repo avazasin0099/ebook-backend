@@ -30,6 +30,7 @@ import sequelize, {
   Notification,
   SupportTicket,
   PlatformSetting,
+  Contact,
 } from './models';
 
 export async function runMigrations(alter = true): Promise<void> {

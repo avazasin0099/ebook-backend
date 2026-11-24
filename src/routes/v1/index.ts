@@ -12,6 +12,7 @@ import drmRoutes from '../../modules/drm/drm.routes';
 import downloadsRoutes from '../../modules/downloads/downloads.routes';
 import readingRoutes from '../../modules/reading/reading.routes';
 import adminRoutes from '../../modules/admin/admin.routes';
+import contactsRoutes from '../../modules/contacts/contacts.routes';
 
 const router = Router();
 
@@ -28,5 +29,7 @@ router.use('/drm', drmRoutes);
 router.use('/downloads', downloadsRoutes);
 router.use('/reading', readingRoutes);
 router.use('/admin', adminRoutes);
+router.use('/contacts', contactsRoutes);
+router.use('/contact', contactsRoutes);
 
 export default router;

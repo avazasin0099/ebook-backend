@@ -30,6 +30,7 @@ import AuditLog from './AuditLog';
 import Notification from './Notification';
 import SupportTicket from './SupportTicket';
 import PlatformSetting from './PlatformSetting';
+import Contact from './Contact';
 
 // Role <-> User
 Role.hasMany(User, { foreignKey: 'roleId', as: 'users' });
@@ -217,4 +218,5 @@ export {
   Notification,
   SupportTicket,
   PlatformSetting,
+  Contact,
 };
